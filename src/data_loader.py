@@ -15,6 +15,9 @@ def download_stock_data(symbol: str, start_date: str, end_date: str):
     if data.empty:
         raise ValueError(f"No data returned for symbol: {symbol}")
 
+    if data.columns.nlevels > 1:
+        data.columns = data.columns.get_level_values(0)
+
     return data
 
 
