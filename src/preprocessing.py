@@ -50,32 +50,49 @@ def create_sequences(
     return np.array(X), np.array(y)
 
 
-def train_test_split_sequences(
-    X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Split sequences into train/test sets by index order (no shuffling)."""
-    split_index = int(len(X) * train_ratio)
+def train_val_test_split_sequences(
+    X: np.ndarray,
+    y: np.ndarray,
+    train_ratio: float = 0.7,
+    val_ratio: float = 0.15,
+) -> tuple[
+    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+]:
+    """Split sequences into chronological train/val/test sets (no shuffling).
 
-    X_train, X_test = X[:split_index], X[split_index:]
-    y_train, y_test = y[:split_index], y[split_index:]
+    The remaining fraction after train_ratio and val_ratio becomes the test
+    set. Order is preserved throughout so the test set stays untouched,
+    future data relative to training/validation.
+    """
+    train_end = int(len(X) * train_ratio)
+    val_end = int(len(X) * (train_ratio + val_ratio))
 
-    return X_train, y_train, X_test, y_test
+    X_train, y_train = X[:train_end], y[:train_end]
+    X_val, y_val = X[train_end:val_end], y[train_end:val_end]
+    X_test, y_test = X[val_end:], y[val_end:]
+
+    return X_train, y_train, X_val, y_val, X_test, y_test
 
 
 def prepare_data(
     symbol: str,
     sequence_length: int = DEFAULT_SEQUENCE_LENGTH,
-    train_ratio: float = 0.8,
+    train_ratio: float = 0.7,
+    val_ratio: float = 0.15,
 ):
     """Run the full preprocessing pipeline for a symbol's Close price."""
     close_prices = load_close_prices(symbol)
     normalized, min_val, max_val = normalize_series(close_prices)
     X, y = create_sequences(normalized, sequence_length)
-    X_train, y_train, X_test, y_test = train_test_split_sequences(X, y, train_ratio)
+    X_train, y_train, X_val, y_val, X_test, y_test = train_val_test_split_sequences(
+        X, y, train_ratio, val_ratio
+    )
 
     return {
         "X_train": X_train,
         "y_train": y_train,
+        "X_val": X_val,
+        "y_val": y_val,
         "X_test": X_test,
         "y_test": y_test,
         "min_val": min_val,
@@ -88,5 +105,7 @@ if __name__ == "__main__":
 
     print(f"X_train shape: {result['X_train'].shape}")
     print(f"y_train shape: {result['y_train'].shape}")
+    print(f"X_val shape: {result['X_val'].shape}")
+    print(f"y_val shape: {result['y_val'].shape}")
     print(f"X_test shape: {result['X_test'].shape}")
     print(f"y_test shape: {result['y_test'].shape}")

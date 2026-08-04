@@ -7,3 +7,5 @@ __pycache__/
 .vscode/
 .idea/
 data/*.csv
+models/*.pt
+models/*.png
